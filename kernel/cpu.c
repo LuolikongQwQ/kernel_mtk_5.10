@@ -560,6 +560,25 @@ static int bringup_cpu(unsigned int cpu)
 	struct task_struct *idle = idle_thread_get(cpu);
 	int ret;
 
+
+	/*
+	* Reset stale stack state from the last time this CPU was online.
+	*/
+	scs_task_reset(idle);
+	kasan_unpoison_task_stack(idle);
+
+	/*
+	* Reset stale stack state from the last time this CPU was online.
+	*/
+	scs_task_reset(idle);
+	kasan_unpoison_task_stack(idle);
+
+	/*
+	* Reset stale stack state from the last time this CPU was online.
+	*/
+	scs_task_reset(idle);
+	kasan_unpoison_task_stack(idle);
+
 	/*
 	 * Reset stale stack state from the last time this CPU was online.
 	 */

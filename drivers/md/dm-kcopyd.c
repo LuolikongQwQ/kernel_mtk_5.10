@@ -379,7 +379,7 @@ static int kcopyd_get_pages(struct dm_kcopyd_client *kc,
 	*pages = NULL;
 
 	do {
-		pl = alloc_pl(__GFP_NOWARN | __GFP_NORETRY | __GFP_KSWAPD_RECLAIM, job_flags);
+                pl = alloc_pl(__GFP_NOWARN | __GFP_NORETRY | __GFP_KSWAPD_RECLAIM, job_flags);
 		if (unlikely(!pl)) {
 			/* Use reserved pages */
 			pl = kc->pages;
@@ -509,7 +509,7 @@ int __init dm_kcopyd_init(void)
 	zero_page_list.next = &zero_page_list;
 	zero_page_list.page = ZERO_PAGE(0);
 
-	kcopyd_rsm_init();
+        kcopyd_rsm_init();
 
 	return 0;
 }
@@ -518,7 +518,7 @@ void dm_kcopyd_exit(void)
 {
 	kmem_cache_destroy(_job_cache);
 	_job_cache = NULL;
-	kcopyd_rsm_destroy();
+        kcopyd_rsm_destroy();
 }
 
 /*
@@ -703,7 +703,7 @@ static int run_pages_job(struct kcopyd_job *job)
 	int r;
 	unsigned nr_pages = dm_div_up(job->dests[0].count, PAGE_SIZE >> 9);
 
-	r = kcopyd_get_pages(job->kc, nr_pages, &job->pages, job->flags);
+        r = kcopyd_get_pages(job->kc, nr_pages, &job->pages, job->flags);
 	if (!r) {
 		/* this job is ready for io */
 		push(&job->kc->io_jobs, job);
