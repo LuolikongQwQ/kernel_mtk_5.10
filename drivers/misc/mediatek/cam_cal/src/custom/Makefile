@@ -1,5 +1,6 @@
 #
 # Copyright (C) 2018 MediaTek Inc.
+# Copyright (C) 2022 XiaoMi, Inc.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License version 2 as
@@ -36,6 +37,16 @@ camera_eeprom-objs += cam_cal_list.o
 comma := ,
 empty :=
 space := $(empty) $(empty)
+
+ifeq ($(CONFIG_BUILD_XIAOMI_CAMERA_IMAGE_NAMES),"matisse")
+BUILD_PROJECT_NAME := matisse
+endif
+ifeq ($(CONFIG_BUILD_XIAOMI_CAMERA_IMAGE_NAMES),"rubens")
+BUILD_PROJECT_NAME := rubens
+endif
+ifeq ($(CONFIG_BUILD_XIAOMI_CAMERA_IMAGE_NAMES),"xaga")
+BUILD_PROJECT_NAME := xaga
+endif
 
 KERNEL_CAM_CAL_SRC := $(notdir $(wildcard $(CAM_CAL_CUSTOM_SRC_LAYOUT_PATH)/$(BUILD_PROJECT_NAME)*.c))
 KERNEL_CAM_CAL_OBJ := $(addprefix layout/,$(patsubst %.c, %.o, $(KERNEL_CAM_CAL_SRC)))

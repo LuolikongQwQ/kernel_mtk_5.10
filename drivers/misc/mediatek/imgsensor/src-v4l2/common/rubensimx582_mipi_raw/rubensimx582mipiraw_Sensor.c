@@ -1,3 +1,5 @@
+// Copyright (C) 2022 XiaoMi, Inc.
+
 #define PFX "RUBENSIMX582_camera_sensor"
 #define pr_fmt(fmt) PFX "[%s] " fmt, __func__
 
@@ -39,10 +41,10 @@
 #define ByPass 0
 #define LONG_EXP 1
 
-unsigned int Fullsize_qsc_flag = 0;
+unsigned int Fullsize_qsc_flag;
 
-static kal_uint8 enable_seamless = 0;
-static kal_uint8 seamless_state = 0;
+static kal_uint8 enable_seamless;
+static kal_uint8 seamless_state;
 static struct SET_SENSOR_AWB_GAIN last_sensor_awb;
 
 static struct imgsensor_info_struct imgsensor_info = {
@@ -73,7 +75,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 3000,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 548000000,
-		.max_framerate = 300, 
+		.max_framerate = 300,
 	},
 
 	.normal_video = { /*normal_video*/
@@ -112,7 +114,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 3000,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 548000000,
-		.max_framerate = 300, 
+		.max_framerate = 300,
 	},
 
 	.custom1 = { /* 4000x3000 30fps sat*/
@@ -125,7 +127,7 @@ static struct imgsensor_info_struct imgsensor_info = {
 		.grabwindow_height = 3000,
 		.mipi_data_lp2hs_settle_dc = 85,
 		.mipi_pixel_rate = 548000000,
-		.max_framerate = 300, 
+		.max_framerate = 300,
 	},
 
 	.custom2 = { /*1920x1080 @120fps*/
@@ -903,7 +905,7 @@ static void sensor_init(struct subdrv_ctx *ctx)
 		sizeof(rubensimx582_init_setting)/sizeof(kal_uint16));
 
 	rubensimx582_table_write_cmos_sensor(ctx, rubensimx582_Image_quality_setting,
-                sizeof(rubensimx582_Image_quality_setting)/sizeof(kal_uint16));
+		sizeof(rubensimx582_Image_quality_setting)/sizeof(kal_uint16));
 
 	write_sensor_LRC(ctx);
 
@@ -1044,7 +1046,6 @@ static void custom5_setting(struct subdrv_ctx *ctx)
 	}
 	rubensimx582_table_write_cmos_sensor(ctx, rubensimx582_custom5_setting,
 		sizeof(rubensimx582_custom5_setting)/sizeof(kal_uint16));
-	seamless_state = 0;
 
 	IMX582_LOG_INF("%s -\n", __func__);
 
@@ -1065,7 +1066,7 @@ static void custom6_setting(struct subdrv_ctx *ctx)
 static void custom7_setting(struct subdrv_ctx *ctx)
 {
 	IMX582_LOG_INF("+\n");
-	normal_video_setting(ctx,ctx->current_fps);
+	normal_video_setting(ctx, ctx->current_fps);
 	seamless_state = 0;
 	IMX582_LOG_INF("-\n");
 }
@@ -1431,7 +1432,7 @@ static kal_uint32 custom4(struct subdrv_ctx *ctx,
 	ctx->frame_length = imgsensor_info.custom4.framelength;
 	ctx->min_frame_length = imgsensor_info.custom4.framelength;
 	ctx->autoflicker_en = KAL_FALSE;
-	
+
 	if (!Fullsize_qsc_flag) {
 		write_sensor_QSC(ctx);
 		Fullsize_qsc_flag = 1;
@@ -1697,7 +1698,7 @@ static kal_uint32 seamless_switch(struct subdrv_ctx *ctx,
 		if (shutter != 0) {
 			set_shutter(ctx, shutter);
 		}
-		
+
 		write_cmos_sensor_8(ctx, 0x3020, 0x00);
 		write_cmos_sensor_8(ctx, 0x3021, 0x00);
 		write_cmos_sensor_8(ctx, 0x0104, 0x00);
@@ -2109,7 +2110,7 @@ static int feature_control(
 		case SENSOR_SCENARIO_ID_NORMAL_PREVIEW:
 		case SENSOR_SCENARIO_ID_CUSTOM1:
 		case SENSOR_SCENARIO_ID_CUSTOM2:
-		case SENSOR_SCENARIO_ID_CUSTOM3:	
+		case SENSOR_SCENARIO_ID_CUSTOM3:
 		case SENSOR_SCENARIO_ID_CUSTOM6:
 		case SENSOR_SCENARIO_ID_CUSTOM7:
 		case SENSOR_SCENARIO_ID_CUSTOM8:
@@ -2330,7 +2331,7 @@ static int feature_control(
 		break;
 	#endif
 	case SENSOR_FEATURE_SET_GAIN:
-		set_gain(ctx, (UINT32) * feature_data);
+		set_gain(ctx, (UINT32) *feature_data);
 		break;
 	case SENSOR_FEATURE_SET_FLASHLIGHT:
 		break;
@@ -2703,8 +2704,8 @@ break;
 	break;
 	case SENSOR_FEATURE_SET_AWB_GAIN:
 		/* modify to separate 3hdr and remosaic */
-		if ((ctx->sensor_mode == IMGSENSOR_MODE_CUSTOM4 ) ||
-			(ctx->sensor_mode == IMGSENSOR_MODE_CUSTOM5 )) {
+		if ((ctx->sensor_mode == IMGSENSOR_MODE_CUSTOM4) ||
+			(ctx->sensor_mode == IMGSENSOR_MODE_CUSTOM5)) {
 			rubensimx582_awb_gain(ctx,
 				(struct SET_SENSOR_AWB_GAIN *) feature_para);
 		}

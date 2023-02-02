@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2019 MediaTek Inc.
+ * Copyright (C) 2022 XiaoMi, Inc.
  */
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": %s: " fmt, __func__
@@ -1427,7 +1428,7 @@ unlock:
 }
 static DEVICE_ATTR_RW(flashlight);
 
-static int flash_cur_sum = 0;
+static int flash_cur_sum;
 
 static ssize_t flashbrightness_show(
 		struct device *dev, struct device_attribute *attr, char *buf)
@@ -1498,7 +1499,7 @@ unlock:
 static DEVICE_ATTR_RW(flashbrightness);
 
 /* torchmode brightness set */
-static int torch_cur_sum = 0;
+static int torch_cur_sum;
 static ssize_t torchbrightness_show(
 		struct device *dev, struct device_attribute *attr, char *buf)
 {

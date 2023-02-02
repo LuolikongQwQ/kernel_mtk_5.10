@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2019 MediaTek Inc.
+ * Copyright (C) 2022 XiaoMi, Inc.
  */
 
 #ifndef _KD_IMGSENSOR_H
@@ -133,8 +134,6 @@
 #define RUBENSS5K4H7_SENSOR_ID                        0x487B
 #define SENSOR_DRVNAME_RUBENSS5K4H7_MIPI_RAW          "rubenss5k4h7_mipi_raw"
 
-#define XAGAS5KHM2_SENSOR_ID                        0xFAD2
-#define SENSOR_DRVNAME_XAGAS5KHM2_MIPI_RAW          "xagas5khm2_mipi_raw"
 #define XAGAGC02M1_SENSOR_ID                        0x2E0
 #define SENSOR_DRVNAME_XAGAGC02M1_MIPI_RAW          "xagagc02m1_mipi_raw"
 #define XAGAS5K4H7_SENSOR_ID                        0x487B
@@ -145,7 +144,6 @@
 #define SENSOR_DRVNAME_XAGAS5KGW1_MIPI_RAW          "xagas5kgw1_mipi_raw"
 #define XAGAOV02B10_SENSOR_ID                        0x002B
 #define SENSOR_DRVNAME_XAGAOV02B10_MIPI_RAW         "xagaov02b10_mipi_raw"
-
 
 /*IMX*/
 #define IMX499_SENSOR_ID                        0x0499

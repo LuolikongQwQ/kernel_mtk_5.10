@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2019 MediaTek Inc.
+ * Copyright (C) 2022 XiaoMi, Inc.
  */
 
 #define PFX "CAM_CAL_XIAOMI"
@@ -110,6 +111,9 @@ unsigned int xiaomi_do_part_number(struct EEPROM_DRV_FD_DATA *pdata,
 
 
 #define AWB_FLAG         0x750
+#ifdef XAGA_CAM
+#define AWB_757_FLAG         0x757
+#endif
 #define AF_FLAG          0x27
 
 #define AF_MAC_DIS_ADDR  0x2B
@@ -154,8 +158,7 @@ unsigned int xiaomi_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 			AWB_FLAG, 1, (unsigned char *)&AWBConfig);
 	if (read_data_size > 0) {
 		err = CAM_CAL_ERR_NO_ERR;
-	}
-	else {
+	} else {
 		CAM_CAL_LOG_ERR("Read Failed\n");
 		show_cmd_error_log(pCamCalData->Command);
 		return err;
@@ -213,8 +216,7 @@ unsigned int xiaomi_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 			AF_FLAG, 1, (unsigned char *)&AFConfig);
 	if (read_data_size > 0) {
 		err = CAM_CAL_ERR_NO_ERR;
-	}
-	else {
+	} else {
 		CAM_CAL_LOG_ERR("Read Failed\n");
 		show_cmd_error_log(pCamCalData->Command);
 		return err;
@@ -262,6 +264,151 @@ unsigned int xiaomi_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 	return err;
 }
 
+#ifdef XAGA_CAM
+unsigned int xiaomi_do_2a_gain_else(struct EEPROM_DRV_FD_DATA *pdata,
+		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData)
+{
+	struct STRUCT_CAM_CAL_DATA_STRUCT *pCamCalData =
+				(struct STRUCT_CAM_CAL_DATA_STRUCT *)pGetSensorCalData;
+	int read_data_size;
+	unsigned int err = CamCalReturnErr[pCamCalData->Command];
+
+    char cal_awb_gain[16] = {0};
+    unsigned short AFInf = 0, AFMacro = 0;
+    unsigned short AFInfDistance = 0, AFMacroDistance = 0;
+
+	unsigned char AWBConfig;
+	unsigned char AFConfig;
+
+	int CalR = 1, CalGr = 1, CalGb = 1, CalB = 1;
+	int FacR = 1, FacGr = 1, FacGb = 1, FacB = 1;
+
+
+	CAM_CAL_LOG_DBG("block_size=%d sensor_id=%x\n", block_size, pCamCalData->sensorID);
+	memset((void *)&pCamCalData->Single2A, 0, sizeof(struct STRUCT_CAM_CAL_SINGLE_2A_STRUCT));
+
+	/* Check rule */
+	if (pCamCalData->DataVer >= CAM_CAL_TYPE_NUM) {
+		err = CAM_CAL_ERR_NO_DEVICE;
+		CAM_CAL_LOG_ERR("Read Failed\n");
+		show_cmd_error_log(pCamCalData->Command);
+		return err;
+	}
+
+	pCamCalData->Single2A.S2aBitEn = CAM_CAL_NONE_BITEN;
+
+	/* get AWB enable bit */
+	read_data_size = read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
+			AWB_757_FLAG, 1, (unsigned char *)&AWBConfig);
+	if (read_data_size > 0) {
+		err = CAM_CAL_ERR_NO_ERR;
+	} else {
+		CAM_CAL_LOG_ERR("Read Failed\n");
+		show_cmd_error_log(pCamCalData->Command);
+		return err;
+	}
+
+	/* check AWB enable bit */
+	if (0x1 == AWBConfig) {
+		pCamCalData->Single2A.S2aVer = 0x01;
+		pCamCalData->Single2A.S2aBitEn |= CAM_CAL_AWB_BITEN;
+
+		read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
+				start_addr, block_size, cal_awb_gain);
+
+		CalR  = (cal_awb_gain[0] << 8) | cal_awb_gain[1];
+		CalGr = (cal_awb_gain[2] << 8) | cal_awb_gain[3];
+		CalGb = (cal_awb_gain[4] << 8) | cal_awb_gain[5];
+		CalB  = (cal_awb_gain[6] << 8) | cal_awb_gain[7];
+		CAM_CAL_LOG_DBG("XiaoMiCamCalAWBGain : CalR,CalGr,CalGb,CalB=0x%x,0x%x,0x%x,0x%x\n",
+			CalR, CalGr, CalGb, CalB);
+		CAM_CAL_LOG_DBG("XiaoMiCamCalAWBGain: UnitR:0x%x, UnitGr:0x%x, UnitGb:0x%x, UnitB=0x%x",
+			cal_awb_gain[1], cal_awb_gain[3], cal_awb_gain[5], cal_awb_gain[7]);
+
+
+		pCamCalData->Single2A.S2aAwb.rUnitGainu4R = (unsigned int)(1023*CalGr/CalR);
+		pCamCalData->Single2A.S2aAwb.rUnitGainu4G = 1023;
+		pCamCalData->Single2A.S2aAwb.rUnitGainu4B = (unsigned int)(1023*CalGr/CalB);
+
+		FacR  = (cal_awb_gain[8]  << 8) | cal_awb_gain[9];
+		FacGr = (cal_awb_gain[10] << 8) | cal_awb_gain[11];
+		FacGb = (cal_awb_gain[12] << 8) | cal_awb_gain[13];
+		FacB  = (cal_awb_gain[14] << 8) | cal_awb_gain[15];
+
+		CAM_CAL_LOG_DBG("XiaoMiCamCalAWBGain : FacR,FacGr,FacGb,FacB=0x%x,0x%x,0x%x,0x%x\n",
+			FacR, FacGr, FacGb, FacB);
+		CAM_CAL_LOG_DBG("XiaoMiCamCalAWBGain : GoldenR:0x%x, GoldenGr:0x%x, GoldenGb:0x%x, GoldenB=0x%x\n",
+			cal_awb_gain[9], cal_awb_gain[11], cal_awb_gain[13], cal_awb_gain[15]);
+
+		pCamCalData->Single2A.S2aAwb.rGoldGainu4R = (unsigned int)(1023*FacGr/FacR);
+		pCamCalData->Single2A.S2aAwb.rGoldGainu4G = 1023;
+		pCamCalData->Single2A.S2aAwb.rGoldGainu4B = (unsigned int)(1023*FacGr/FacB);
+
+		CAM_CAL_LOG_DBG("XiaoMiCamCalAWBGain : ======================AWB CAM_CAL==================\n");
+		CAM_CAL_LOG_DBG("XiaoMiCamCalAWBGain : [rCalGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4R);
+		CAM_CAL_LOG_DBG("XiaoMiCamCalAWBGain : [rCalGain.u4G] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4G);
+		CAM_CAL_LOG_DBG("XiaoMiCamCalAWBGain : [rCalGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rUnitGainu4B);
+		CAM_CAL_LOG_DBG("XiaoMiCamCalAWBGain : [rFacGain.u4R] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldGainu4R);
+		CAM_CAL_LOG_DBG("XiaoMiCamCalAWBGain : [rFacGain.u4G] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldGainu4G);
+		CAM_CAL_LOG_DBG("XiaoMiCamCalAWBGain : [rFacGain.u4B] = %d\n", pCamCalData->Single2A.S2aAwb.rGoldGainu4B);
+		CAM_CAL_LOG_DBG("XiaoMiCamCalAWBGain : ======================AWB CAM_CAL==================\n");
+	}
+
+
+	/* get AF enable bit */
+	read_data_size = read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
+			AF_FLAG, 1, (unsigned char *)&AFConfig);
+	if (read_data_size > 0) {
+		err = CAM_CAL_ERR_NO_ERR;
+	} else {
+		CAM_CAL_LOG_ERR("Read Failed\n");
+		show_cmd_error_log(pCamCalData->Command);
+		return err;
+	}
+
+	/* check AF enable bit */
+	if (0x1 == AFConfig) {
+		pCamCalData->Single2A.S2aVer = 0x01;
+		pCamCalData->Single2A.S2aBitEn |= CAM_CAL_AF_BITEN;
+
+		read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
+				AF_MAC_DIS_ADDR, 2, (unsigned char *)&AFMacroDistance);
+
+		read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
+				AF_MAC_DAC_ADDR, 2, (unsigned char *)&AFMacro);
+
+		read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
+				AF_INF_DIS_ADDR, 2, (unsigned char *)&AFInfDistance);
+
+		read_data(pdata, pCamCalData->sensorID, pCamCalData->deviceID,
+				AF_INF_DAC_ADDR, 2, (unsigned char *)&AFInf);
+
+		AFInf   = 0xffff & ((AFInf   << 8) | (AFInf   >> 8));
+		AFMacro = 0xffff & ((AFMacro << 8) | (AFMacro >> 8));
+
+		AFInfDistance   = 0xffff & ((AFInfDistance   << 8) | (AFInfDistance   >> 8));
+		AFMacroDistance = 0xffff & ((AFMacroDistance << 8) | (AFMacroDistance >> 8));
+
+		pCamCalData->Single2A.S2aAf[0] = AFInf;
+		pCamCalData->Single2A.S2aAf[1] = AFMacro;
+		pCamCalData->Single2A.S2aAF_t.AF_infinite_pattern_distance = AFInfDistance * 10;
+		pCamCalData->Single2A.S2aAF_t.AF_Macro_pattern_distance    = AFMacroDistance * 10;
+
+		CAM_CAL_LOG_DBG("======================AF CAM_CAL==================\n");
+		CAM_CAL_LOG_DBG("[AFInf] = %d\n", AFInf);
+		CAM_CAL_LOG_DBG("[AFMacro] = %d\n", AFMacro);
+		CAM_CAL_LOG_DBG("[AFInfDistance] = %d\n", pCamCalData->Single2A.S2aAF_t.AF_infinite_pattern_distance);
+		CAM_CAL_LOG_DBG("[AFMacroDistance] = %d\n", pCamCalData->Single2A.S2aAF_t.AF_Macro_pattern_distance);
+		CAM_CAL_LOG_DBG("======================AF CAM_CAL==================\n");
+
+	}
+
+	CAM_CAL_LOG_DBG("S2aBitEn=0x%02x", pCamCalData->Single2A.S2aBitEn);
+
+	return err;
+}
+#endif
+
 
 /***********************************************************************************
  * Function : To read LSC Table
@@ -295,6 +442,10 @@ unsigned int xiaomi_do_single_lsc(struct EEPROM_DRV_FD_DATA *pdata,
 	pCamCalData->SingleLsc.LscTable.MtkLcsData.TableSize = table_size;
 	if (table_size > 0) {
 		pCamCalData->SingleLsc.TableRotation = 0;
+#if defined(MATISSE_CAM) || defined(RUBENS_CAM)
+	if (0xfad2 == pCamCalData->sensorID || 0x0582 == pCamCalData->sensorID)
+		pCamCalData->SingleLsc.TableRotation = 1; //Because the module made the mirror and flip
+#endif
 		CAM_CAL_LOG_DBG("u4Offset=%d u4Length=%d", start_addr, table_size);
 		CAM_CAL_LOG_DBG("sensorID : 0x%x TableRotation : %d\n", pCamCalData->sensorID,
 			pCamCalData->SingleLsc.TableRotation);
@@ -350,8 +501,7 @@ unsigned int xiaomi_do_pdaf(struct EEPROM_DRV_FD_DATA *pdata,
 	if (read_data_size > 0) {
 		pCamCalData->PDAF.Size_of_PDAF = 496;
 		err = CAM_CAL_ERR_NO_ERR;
-	}
-	else {
+	} else {
 		CAM_CAL_LOG_ERR("Read Failed\n");
 		show_cmd_error_log(pCamCalData->Command);
 		return err;

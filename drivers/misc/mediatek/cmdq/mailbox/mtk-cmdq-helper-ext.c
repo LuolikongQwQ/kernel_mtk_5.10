@@ -775,6 +775,7 @@ void cmdq_pkt_free_buf(struct cmdq_pkt *pkt)
 		if (!pkt->dev || !buf->va_base || !CMDQ_BUF_ADDR(buf))
 			cmdq_err("pkt:0x%p pa:%pa iova:%pa",
 			pkt, &buf->pa_base, &buf->iova_base);
+		buf->alloc_time = 0;
 		if (buf->use_pool) {
 			if (pkt->cur_pool.pool)
 				cmdq_mbox_pool_free_impl(pkt->cur_pool.pool,

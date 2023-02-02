@@ -495,6 +495,11 @@ struct scp_sub_feature_tb sensor_type_table[NUM_SENSOR_TYPE] = {
 		.enable  = 0,
 	},
 	{
+		.feature = SAR_ALGO_2_ID,
+		.freq    = 0,
+		.enable  = 0,
+	},
+	{
 		.feature = DBTAP_ID,
 		.freq    = 0,
 		.enable  = 0,
@@ -541,6 +546,16 @@ struct scp_sub_feature_tb sensor_type_table[NUM_SENSOR_TYPE] = {
 	},
 	{
 		.feature = DUAL_CCT_FEATURE_ID,
+		.freq    = 0,
+		.enable  = 0,
+	},
+	{
+		.feature = TREADMILL_ID,
+		.freq    = 0,
+		.enable  = 0,
+	},
+	{
+		.feature = SMALL_MOVE_FEATURE_ID,
 		.freq    = 0,
 		.enable  = 0,
 	},

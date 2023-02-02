@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2019 MediaTek Inc.
-
+// Copyright (C) 2022 XiaoMi, Inc.
 #include <linux/delay.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
@@ -286,7 +286,7 @@ static int lm3644_torch_brt_ctrl(struct lm3644_flash *flash,
 	}
 
 	br_bits = LM3644_TORCH_BRT_uA_TO_REG(torch_cur_avg);
-	pr_info("%s avg_brt:%u brt_bit :%x", __func__, torch_cur_avg ,br_bits);
+	pr_info("%s avg_brt:%u brt_bit :%x", __func__, torch_cur_avg, br_bits);
 
 	rval = regmap_update_bits(flash->regmap,
 				  REG_LED0_TORCH_BR, 0x7f, br_bits);
@@ -313,7 +313,7 @@ static int lm3644_flash_brt_ctrl(struct lm3644_flash *flash,
 	}
 
 	br_bits = LM3644_FLASH_BRT_uA_TO_REG(flash_cur_avg);
-	pr_info("%s avg_brt:%u brt_bit :%x", __func__, flash_cur_avg ,br_bits);
+	pr_info("%s avg_brt:%u brt_bit :%x", __func__, flash_cur_avg, br_bits);
 
 	rval = regmap_update_bits(flash->regmap,
 				  REG_LED0_FLASH_BR, 0x7f, br_bits);

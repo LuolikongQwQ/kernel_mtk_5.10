@@ -87,6 +87,10 @@ unsigned int xiaomi_do_single_lsc(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
 unsigned int xiaomi_do_2a_gain(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
+#ifdef XAGA_CAM
+unsigned int xiaomi_do_2a_gain_else(struct EEPROM_DRV_FD_DATA *pdata,
+		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
+#endif
 unsigned int xiaomi_do_pdaf(struct EEPROM_DRV_FD_DATA *pdata,
 		unsigned int start_addr, unsigned int block_size, unsigned int *pGetSensorCalData);
 unsigned int xiaomi_do_stereo_data(struct EEPROM_DRV_FD_DATA *pdata,

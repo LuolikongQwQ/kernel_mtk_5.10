@@ -85,6 +85,10 @@ unsigned int vcp_current_freq;
 unsigned int vcp_support;
 unsigned int vcp_dbg_log;
 
+/* set flag after driver initial done */
+bool driver_init_done;
+EXPORT_SYMBOL_GPL(driver_init_done);
+
 /*vcp awake variable*/
 int vcp_awake_counts[VCP_CORE_TOTAL];
 
@@ -158,15 +162,12 @@ static unsigned int vcp_timeout_times;
 
 #endif
 
-static bool is_suspending;
 static DEFINE_MUTEX(vcp_pw_clk_mutex);
 static DEFINE_MUTEX(vcp_A_notify_mutex);
 static DEFINE_MUTEX(vcp_feature_mutex);
 
 char *core_ids[VCP_CORE_TOTAL] = {"VCP A"};
 DEFINE_SPINLOCK(vcp_awake_spinlock);
-/* set flag after driver initial done */
-static bool driver_init_done;
 struct vcp_ipi_irq {
 	const char *name;
 	int order;
@@ -258,6 +259,9 @@ static int vcp_ipi_dbg_resume_noirq(struct device *dev)
 	int i = 0;
 	int ret = 0;
 	bool state = false;
+
+	if (mmup_enable_count() == 0)
+		return -1;
 
 	for (i = 0; i < IRQ_NUMBER; i++) {
 		ret = irq_get_irqchip_state(vcp_ipi_irqs[i].irq_no,
@@ -628,10 +632,9 @@ static void vcp_err_info_handler(int id, void *prdata, void *data,
  */
 void trigger_vcp_halt(enum vcp_core_id id)
 {
-	if (vcp_ready[id]) {
+	if (mmup_enable_count() && vcp_ready[id]) {
 		/* trigger halt isr, force vcp enter wfi */
 		writel(B_GIPC4_SETCLR_0, R_GIPC_IN_SET);
-		wait_vcp_wdt_irq_done();
 	}
 }
 EXPORT_SYMBOL_GPL(trigger_vcp_halt);
@@ -816,6 +819,7 @@ static int vcp_pm_event(struct notifier_block *notifier
 		mutex_lock(&vcp_pw_clk_mutex);
 		pr_notice("[VCP] PM_SUSPEND_PREPARE entered %d %d\n", pwclkcnt, is_suspending);
 		if ((!is_suspending) && pwclkcnt) {
+			is_suspending = true;
 #if VCP_RECOVERY_SUPPORT
 			/* make sure all reset done */
 			flush_workqueue(vcp_reset_workqueue);
@@ -846,7 +850,6 @@ static int vcp_pm_event(struct notifier_block *notifier
 			clk_disable_unprepare(vcp26m);
 		}
 		is_suspending = true;
-		mutex_unlock(&vcp_pw_clk_mutex);
 
 		// SMC call to TFA / DEVAPC
 		// arm_smccc_smc(MTK_SIP_KERNEL_VCP_CONTROL, MTK_TINYSYS_VCP_KERNEL_OP_XXX,
@@ -855,7 +858,6 @@ static int vcp_pm_event(struct notifier_block *notifier
 
 		return NOTIFY_OK;
 	case PM_POST_SUSPEND:
-		mutex_lock(&vcp_pw_clk_mutex);
 		pr_notice("[VCP] PM_POST_SUSPEND entered %d %d\n", pwclkcnt, is_suspending);
 		if (is_suspending && pwclkcnt) {
 			retval = clk_prepare_enable(vcp26m);
@@ -876,6 +878,7 @@ static int vcp_pm_event(struct notifier_block *notifier
 #if VCP_RECOVERY_SUPPORT
 			cpuidle_pause_and_lock();
 			reset_vcp(VCP_ALL_SUSPEND);
+			is_suspending = false;
 			waitCnt = vcp_wait_ready_sync(RTOS_FEATURE_ID);
 			cpuidle_resume_and_unlock();
 #endif
@@ -2429,14 +2432,30 @@ static int vcp_device_probe(struct platform_device *pdev)
 		return ret;
 	}
 #endif
-	/* device link to SMI for iommu */
+	/* device link to SMI for Dram iommu */
 	smi_node = of_parse_phandle(dev->of_node, "mediatek,smi", 0);
 	psmi_com_dev = of_find_device_by_node(smi_node);
 	if (psmi_com_dev) {
 		link = device_link_add(dev, &psmi_com_dev->dev,
 				DL_FLAG_STATELESS | DL_FLAG_PM_RUNTIME);
+		pr_info("[VCP] device link to %s\n", dev_name(&psmi_com_dev->dev));
 		if (!link) {
-			dev_info(dev, "Unable to link %s.\n",
+			dev_info(dev, "Unable to link Dram %s.\n",
+				dev_name(&psmi_com_dev->dev));
+			ret = -EINVAL;
+			return ret;
+		}
+	}
+
+	/* device link to SMI for SLB/Infra */
+	smi_node = of_parse_phandle(dev->of_node, "mediatek,smi", 1);
+	psmi_com_dev = of_find_device_by_node(smi_node);
+	if (psmi_com_dev) {
+		link = device_link_add(dev, &psmi_com_dev->dev,
+				DL_FLAG_STATELESS | DL_FLAG_PM_RUNTIME);
+		pr_info("[VCP] device link to %s\n", dev_name(&psmi_com_dev->dev));
+		if (!link) {
+			dev_info(dev, "Unable to link SLB/Infra %s.\n",
 				dev_name(&psmi_com_dev->dev));
 			ret = -EINVAL;
 			return ret;

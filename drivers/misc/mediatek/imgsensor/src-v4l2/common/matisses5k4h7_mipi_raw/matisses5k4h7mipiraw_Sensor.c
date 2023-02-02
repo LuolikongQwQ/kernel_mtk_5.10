@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 // Copyright (c) 2019 MediaTek Inc.
-
+// Copyright (C) 2022 XiaoMi, Inc.
+//
 /*****************************************************************************
  *
  * Filename:
@@ -73,7 +74,7 @@
 #define AWB_G_GAIN_ADDR 0x0D84
 #define AWB_B_GAIN_ADDR 0x0D86
 
-static int set_gain_num = 0 ;
+static int set_gain_num;
 
 static struct imgsensor_info_struct imgsensor_info = {
 	.sensor_id = MATISSES5K4H7_SENSOR_ID,
@@ -288,11 +289,11 @@ static void write_shutter(struct subdrv_ctx *ctx, kal_uint32 shutter)
 				//set_dummy();
 		} else {
 				write_cmos_sensor(ctx, GROUP_HOLD_ADDR, 0x0100);
-				write_cmos_sensor_8(ctx,0x0340, ctx->frame_length >> 8);
-				write_cmos_sensor_8(ctx,0x0341, ctx->frame_length & 0xFF);
+				write_cmos_sensor_8(ctx, 0x0340, ctx->frame_length >> 8);
+				write_cmos_sensor_8(ctx, 0x0341, ctx->frame_length & 0xFF);
 				write_cmos_sensor(ctx, GROUP_HOLD_ADDR, 0x0000);
 		}
-	} 
+	}
 
 	// Update Shutter
 	write_cmos_sensor(ctx, GROUP_HOLD_ADDR, 0x0100);
@@ -405,8 +406,7 @@ static void set_shutter_frame_length(struct subdrv_ctx *ctx, kal_uint16 shutter,
 
 	if (shutter & 0xFFFF0000) {
 		Rshift = 6;
-	}
-	else {
+	} else {
 		Rshift = 0;
 	}
 
@@ -492,24 +492,24 @@ static kal_uint16 set_gain(struct subdrv_ctx *ctx, kal_uint16 gain)
 			gain = max_gain;
 	}
 
-	if(ctx->sensor_mode == IMGSENSOR_MODE_CUSTOM1){
-		if(set_gain_num ==0){
-			set_gain_num ++;
+	if (ctx->sensor_mode == IMGSENSOR_MODE_CUSTOM1) {
+		if (set_gain_num == 0) {
+			set_gain_num++;
 			reg_gain = gain2reg(ctx, gain);
 			ctx->gain = reg_gain;
-		}else{
+		} else {
 			reg_gain = ctx->gain;//gain n+1 take effect
 			ctx->gain = gain2reg(ctx, gain);
-		}
-	}else{
+	}
+		} else {
 		reg_gain = gain2reg(ctx, gain);
 		ctx->gain = reg_gain;
 	}
 
-	S5K4H7_LOG_DBG("ctx->sensor_mode: %d",ctx->sensor_mode);
+	S5K4H7_LOG_DBG("ctx->sensor_mode: %d", ctx->sensor_mode);
 	S5K4H7_LOG_DBG("gain = %d, ctx->gain = 0x%x ,reg_gain = 0x%x, max_gain:0x%x\n ",
 		gain, ctx->gain, reg_gain, max_gain);
-	if(reg_gain){
+	if (reg_gain) {
 		//write_cmos_sensor(0x0204,reg_gain);
 		write_cmos_sensor_8(ctx, 0x0204, (reg_gain >> 8));
 		write_cmos_sensor_8(ctx, 0x0205, (reg_gain & 0xff));
@@ -558,7 +558,7 @@ static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 			mDELAY(5);
 	} else {
 			//write_cmos_sensor(0x6028,0x4000);
-			write_cmos_sensor_8(ctx, 0x0100, 0x00);	
+			write_cmos_sensor_8(ctx, 0x0100, 0x00);
 
 	}
 	return ERROR_NONE;
@@ -568,7 +568,7 @@ static kal_uint32 streaming_control(struct subdrv_ctx *ctx, kal_bool enable)
 static void sensor_init(struct subdrv_ctx *ctx)
 {
 	S5K4H7_LOG_INF("+\n");
-	
+
 	matisses5k4h7_table_write_cmos_sensor(ctx, matisses5k4h7_init_setting,
 		sizeof(matisses5k4h7_init_setting) / sizeof(kal_uint16));
 
@@ -578,10 +578,10 @@ static void sensor_init(struct subdrv_ctx *ctx)
 static void preview_setting(struct subdrv_ctx *ctx)
 {
 	S5K4H7_LOG_INF("+\n");
-	
+
 	matisses5k4h7_table_write_cmos_sensor(ctx, matisses5k4h7_preview_setting,
 			sizeof(matisses5k4h7_preview_setting) / sizeof(kal_uint16));
-	
+
 	S5K4H7_LOG_INF("-\n");
 } /* preview_setting */
 
@@ -1300,7 +1300,7 @@ static kal_uint32 set_test_pattern_mode(struct subdrv_ctx *ctx, kal_bool enable)
 
 	write_cmos_sensor_8(ctx, 0x3200, 0x00);
 	ctx->test_pattern = enable;
-  
+
 	return ERROR_NONE;
 #endif
 }
@@ -1367,7 +1367,7 @@ static int feature_control(
 				imgsensor_info.sensor_output_dataformat;
 			break;
 		}
-		S5K4H7_LOG_INF("SENSOR_FEATURE_GET_OUTPUT_FORMAT_BY_SCENARIO get:%d\n",*(feature_data + 1));
+		S5K4H7_LOG_INF("SENSOR_FEATURE_GET_OUTPUT_FORMAT_BY_SCENARIO get:%d\n", *(feature_data + 1));
 	break;
 	case SENSOR_FEATURE_GET_AWB_REQ_BY_SCENARIO:
 		switch (*feature_data) {

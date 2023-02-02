@@ -32,6 +32,7 @@ static const unsigned int usb_extcon_cable[] = {
 	EXTCON_USB_HOST,
 	EXTCON_NONE,
 };
+static unsigned int global_role = 0;
 
 static void mtk_usb_extcon_update_role(struct work_struct *work)
 {
@@ -42,6 +43,7 @@ static void mtk_usb_extcon_update_role(struct work_struct *work)
 
 	cur_dr = extcon->c_role;
 	new_dr = role->d_role;
+	global_role = new_dr;
 
 	dev_info(extcon->dev, "cur_dr(%d) new_dr(%d)\n", cur_dr, new_dr);
 
@@ -76,8 +78,8 @@ static void mtk_usb_extcon_update_role(struct work_struct *work)
 	/* usb role switch */
 	if (extcon->role_sw)
 		usb_role_switch_set_role(extcon->role_sw, new_dr);
-
 	extcon->c_role = new_dr;
+	dev_info(extcon->dev, "ended cur_dr(%d) new_dr(%d)\n", cur_dr, new_dr);
 	kfree(role);
 }
 
@@ -133,7 +135,7 @@ static void mtk_usb_extcon_psy_detector(struct work_struct *work)
 	dev_info(extcon->dev, "online=%d, input_suspend=%d, type=%d\n", pval.intval, input_suspend, tval.intval);
 
 	/* Workaround for PR_SWAP, Host mode should not come to this function. */
-	if (extcon->c_role == USB_ROLE_HOST || (tval.intval != POWER_SUPPLY_TYPE_USB && tval.intval != POWER_SUPPLY_TYPE_USB_CDP && pval.intval)) {
+	if (extcon->c_role == USB_ROLE_HOST || (tval.intval != POWER_SUPPLY_TYPE_USB && tval.intval != POWER_SUPPLY_TYPE_USB_CDP && pval.intval) || global_role != extcon->c_role) {
 		dev_info(extcon->dev, "Remain HOST mode or usb_type not sdp or cdp\n");
 		return;
 	}

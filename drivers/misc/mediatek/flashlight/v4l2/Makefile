@@ -4,6 +4,10 @@ MTK_CUSTOM_PATH := $(srctree)/drivers/misc/mediatek
 subdir-ccflags-y += \
 	-I$(MTK_CUSTOM_PATH)/flashlight
 
+ifeq ($(CONFIG_BUILD_XIAOMI_CAMERA_IMAGE_NAMES),"xaga")
+subdir-ccflags-y += -DXAGA_CAM
+endif
+
 ifneq ($(wildcard $(MTK_CUSTOM_PATH)/flashlight/v4l2/k6983v1_64_alpha),)
 obj-$(CONFIG_MTK_VIDEO_SY7806)     += k6983v1_64_alpha/sy7806.o
 endif
